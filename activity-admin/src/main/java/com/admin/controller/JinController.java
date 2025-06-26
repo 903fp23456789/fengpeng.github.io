@@ -8,12 +8,24 @@ import com.admin.utils.HttpUtils;
 import com.alibaba.fastjson.JSONObject;
 import io.micrometer.common.util.StringUtils;
 import jakarta.websocket.server.PathParam;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.dom4j.Document;
 import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -81,5 +93,22 @@ public class JinController {
         Map<String, String> map = HttpUtils.doPost(url, param, token);
         NotarizationDto notarizationDto = new NotarizationDto(map.get("transStaus"), map.get("transMsg"));
         return notarizationDto;
+    }
+
+    public void getNote() throws IOException, DocumentException {
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpPost post = new HttpPost("https://www.stg.goldcert.cn/cchs_admin/api/goldcert/notarization");
+        post.setEntity(new StringEntity("//"));
+        post.addHeader("Content-Type", "application/json");
+        post.addHeader("Authorization", "Bearer host");
+        CloseableHttpResponse response = client.execute(post);
+        HttpEntity entity = response.getEntity();
+        SAXReader reader = new SAXReader();
+        Document document = reader.read(entity.getContent());
+        Map<String, String> map = new HashMap<String, String>();
+        document.getRootElement().elements().forEach(element -> {
+            map.put(element.getName(), element.getText());
+        });
+        map.forEach((key, value) -> System.out.println(key + ":" + value));
     }
 }
